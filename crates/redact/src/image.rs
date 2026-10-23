@@ -16,15 +16,19 @@ const MAX_PIXELS: u64 = 64 << 20;
 /// The quality a cleared JPEG is written at: the page should look as it did.
 const JPEG_QUALITY: u8 = 90;
 
+/// The family name of colour space `cs`: the name itself, or an array's first element.
+fn family(cs: &Object) -> Option<&[u8]> {
+    match cs {
+        Object::Name(n) => Some(n.as_slice()),
+        Object::Array(a) => a.first()?.as_name(),
+        _ => None,
+    }
+}
+
 fn components(doc: &Document, s: &Stream) -> Option<usize> {
     let cs = doc.resolve(s.dict.get(b"ColorSpace")?);
     let cs = &*cs;
-    let name = match cs {
-        Object::Name(n) => n.as_slice(),
-        Object::Array(a) => a.first()?.as_name()?,
-        _ => return None,
-    };
-    Some(match name {
+    Some(match family(cs)? {
         b"DeviceGray" | b"G" | b"CalGray" | b"Indexed" | b"I" | b"Separation" => 1,
         b"DeviceRGB" | b"RGB" | b"CalRGB" | b"Lab" => 3,
         b"DeviceCMYK" | b"CMYK" => 4,
@@ -123,6 +127,11 @@ fn decode_and_clear(doc: &Document, s: &Stream, ctm: &Matrix, rects: &[[f64; 4]]
 fn clear_jpeg(doc: &Document, s: &Stream, ctm: &Matrix, rects: &[[f64; 4]]) -> Option<Option<Stream>> {
     use image::ImageDecoder;
     let ncomp = components(doc, s)?;
+    // A palette image's samples are indices: re-encoding them lossily would pick other entries,
+    // so other colours. Samples in the other spaces are values, which a new JPEG only rounds.
+    if matches!(family(&doc.resolve(s.dict.get(b"ColorSpace")?)), Some(b"Indexed" | b"I")) {
+        return None;
+    }
     let decoder = image::codecs::jpeg::JpegDecoder::new(std::io::Cursor::new(&s.raw[..])).ok()?;
     let (w, h) = decoder.dimensions();
     if w == 0 || h == 0 || (w as u64) * (h as u64) > MAX_PIXELS {

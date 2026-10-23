@@ -314,15 +314,19 @@ fn a_jpeg_that_can_not_be_cleared_safely_is_still_removed() {
     // The colour space says grey but the JPEG is RGB: reading it would be guesswork, so the image
     // goes whole (fail-closed), as do bytes that aren't a JPEG at all, and an RGB JPEG whose
     // `/ColorTransform 0` says it holds RGB rather than YCbCr samples, which the decoder can't be
-    // told and would convert anyway.
+    // told and would convert anyway, and a palette JPEG, whose re-encoded indices would pick other
+    // colours.
     let removed = [
+        ("/ColorSpace [/Indexed /DeviceRGB 1 <000000FFFFFF>] /Filter /DCTDecode", white_jpeg(16, 16, 1)),
         ("/ColorSpace /DeviceGray /Filter /DCTDecode", white_jpeg(16, 16, 3)),
         ("/ColorSpace /DeviceRGB /Filter /DCTDecode", b"not a jpeg".to_vec()),
         ("/ColorSpace /DeviceRGB /Filter /DCTDecode /DecodeParms << /ColorTransform 0 >>", white_jpeg(16, 16, 3)),
         ("/ColorSpace /DeviceRGB /Filter [/DCTDecode] /DecodeParms [<< /ColorTransform 0 >>]", white_jpeg(16, 16, 3)),
     ];
-    // A grey JPEG is cleared like an RGB one, and so is an RGB JPEG that states the usual YCbCr.
+    // A grey JPEG is cleared like an RGB one, and so is one in a calibrated space and an RGB JPEG
+    // that states the usual YCbCr.
     let cleared = [
+        ("/ColorSpace [/CalGray << /WhitePoint [0.9505 1 1.089] >>] /Filter /DCTDecode", white_jpeg(16, 16, 1)),
         ("/ColorSpace /DeviceGray /Filter [/DCTDecode]", white_jpeg(16, 16, 1)),
         ("/ColorSpace /DeviceRGB /Filter /DCTDecode /DecodeParms << /ColorTransform 1 >>", white_jpeg(16, 16, 3)),
     ];
