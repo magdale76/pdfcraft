@@ -8193,7 +8193,7 @@ status = "shipped"
 commands = ["print.dialog"]
 tools = ["doc_print"]
 evidence = ["crates/engine/src/tests.rs::printing_as_image_sends_pictures_instead_of_pages", "crates/ui-egui/tests/it/print.rs::print_as_image_is_an_advanced_choice_that_saves_pictures", "crates/automation/tests/it/automation.rs::doc_print_as_image"]
-notes = "asks the printer for monochrome (lp -o, and the Windows page settings as the job's); with Print as image the pictures themselves are rendered grey (Rec. 601 luma), so the print-ready PDF is grayscale too. Still missing against Acrobat: a grey conversion of the vector pages without rendering them."
+notes = "asks the printer for monochrome (lp -o, and the Windows page settings as the job's); with Print as image the pictures themselves are rendered grey (Rec. 601 luma), so the print-ready PDF is grayscale too. Unticked, a Windows job names no colour, so a black and white chosen in the printer's Properties applies (craft-libs#141, #2422). Still missing against Acrobat: a grey conversion of the vector pages without rendering them."
 
 [[feature]]
 id = "print.print-as-image"
